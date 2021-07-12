@@ -1,12 +1,19 @@
 import { MuxAsyncIterator } from "https://deno.land/std@0.100.0/async/mod.ts";
+import { HttpConn, RequestEvent } from "./deno_types.ts";
 
 export type HTTPOptions = Omit<Deno.ListenOptions, "transport">;
 export type HTTPSOptions = Omit<Deno.ListenTlsOptions, "transport">;
 
 const ERROR_INVALID_ADDRESS = "Invalid address";
 const ERROR_ALREADY_RESPONDED = "Response already sent";
+const ERROR_NEED_UNSTABLE_FLAG = "`--unstable` flag is required";
 
-export class ServerRequest implements Deno.RequestEvent {
+const serveHttp: (conn: Deno.Conn) => HttpConn = "serveHttp" in Deno
+  ? // deno-lint-ignore no-explicit-any
+    (Deno as any).serveHttp.bind(Deno)
+  : undefined;
+
+export class ServerRequest implements RequestEvent {
   #request: Request;
   #resolver!: (value: Response | Promise<Response>) => void;
   #responsePromise: Promise<void>;
@@ -15,9 +22,9 @@ export class ServerRequest implements Deno.RequestEvent {
   /**
    * Constructs a new ServerRequest instance.
    *
-   * @param {Deno.RequestEvent} requestEvent
+   * @param {RequestEvent} requestEvent
    */
-  constructor(requestEvent: Deno.RequestEvent) {
+  constructor(requestEvent: RequestEvent) {
     this.#request = requestEvent.request;
 
     const wrappedResponse = new Promise<Response>((resolve) => {
@@ -68,7 +75,7 @@ export class ServerRequest implements Deno.RequestEvent {
    * @param {Response|Promise<Response>} response
    * @return {Promise<void>}
    *
-   * @throw {Deno.errors.BadResource} when the response has already been sent.
+   * @throws {Deno.errors.BadResource} When the response has already been sent.
    */
   respondWith(response: Response | Promise<Response>): Promise<void> {
     if (this.#done) {
@@ -84,7 +91,7 @@ export class ServerRequest implements Deno.RequestEvent {
 
 export class Server implements AsyncIterable<ServerRequest> {
   #closing = false;
-  #httpConnections: Deno.HttpConn[] = [];
+  #httpConnections: HttpConn[] = [];
 
   /**
    * Creates a new Server instance.
@@ -116,14 +123,14 @@ export class Server implements AsyncIterable<ServerRequest> {
   /**
    * Yields all HTTP requests on a single TCP connection.
    *
-   * @param {Deno.HttpConn} httpConn The HTTP connection to yield requests from.
+   * @param {HttpConn} httpConn The HTTP connection to yield requests from.
    *
    * @yields {ServerRequest} HTTP request events
    *
    * @private
    */
   private async *iterateHttpRequests(
-    httpConn: Deno.HttpConn,
+    httpConn: HttpConn,
   ): AsyncIterableIterator<ServerRequest> {
     while (!this.#closing) {
       // Yield the new HTTP request on the connection.
@@ -195,7 +202,7 @@ export class Server implements AsyncIterable<ServerRequest> {
     }
 
     // "Upgrade" the network connection into a HTTP connection
-    const httpConn = Deno.serveHttp(conn);
+    const httpConn = serveHttp(conn);
 
     // Closing the underlying server will not close the HTTP connection,
     // so we track it for closure upon shutdown.
@@ -211,21 +218,21 @@ export class Server implements AsyncIterable<ServerRequest> {
   /**
    * Adds the HTTP connection to the internal tracking list.
    *
-   * @param {Deno.HttpConn} httpConn
+   * @param {HttpConn} httpConn
    *
    * @private
    */
-  private trackConnection(httpConn: Deno.HttpConn): void {
+  private trackConnection(httpConn: HttpConn): void {
     this.#httpConnections.push(httpConn);
   }
 
   /**
    * Removes the HTTP connection from the internal tracking list.
    *
-   * @param {Deno.HttpConn} httpConn
+   * @param {HttpConn} httpConn
    * @private
    */
-  private untrackConnection(httpConn: Deno.HttpConn): void {
+  private untrackConnection(httpConn: HttpConn): void {
     const index = this.#httpConnections.indexOf(httpConn);
 
     if (index !== -1) {
@@ -253,7 +260,7 @@ export class Server implements AsyncIterable<ServerRequest> {
  * @param {string} address The address string to parse.
  * @return {HTTPOptions} The parsed address object.
  *
- * @throw {TypeError} when an invalid address string is provided.
+ * @throws {TypeError} When an invalid address string is provided.
  *
  * @private
  */
@@ -305,6 +312,8 @@ function isListenTlsOptions(
  * @param {null|number|string|HTTPOptions|HTTPSOptions} [address] The address for the server to listen on.
  * @return {Server} A server instance listening on the provided address.
  *
+ * @throws {Error} When the `--unstable` flag has not be set.
+ *
  * @example
  *
  * ```ts
@@ -324,6 +333,10 @@ function isListenTlsOptions(
 export function serve(
   address?: null | number | string | HTTPOptions | HTTPSOptions,
 ): Server {
+  if (!serveHttp) {
+    throw new Error(ERROR_NEED_UNSTABLE_FLAG);
+  }
+
   let listenOptions;
 
   if (typeof address === "undefined" || address === null) {
