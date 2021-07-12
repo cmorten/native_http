@@ -19,4 +19,4 @@ lint:
 	@deno lint --unstable
 
 test:
-	@deno test -A --unstable --allow-none ./
+	@deno test -A --unstable --allow-none --doc ./
