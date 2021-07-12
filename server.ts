@@ -3,8 +3,8 @@ import { MuxAsyncIterator } from "https://deno.land/std@0.100.0/async/mod.ts";
 export type HTTPOptions = Omit<Deno.ListenOptions, "transport">;
 export type HTTPSOptions = Omit<Deno.ListenTlsOptions, "transport">;
 
-export const ERROR_INVALID_ADDRESS = "Invalid address";
-export const ERROR_ALREADY_RESPONDED = "Response already sent";
+const ERROR_INVALID_ADDRESS = "Invalid address";
+const ERROR_ALREADY_RESPONDED = "Response already sent";
 
 export class ServerRequest implements Deno.RequestEvent {
   #request: Request;
@@ -66,8 +66,9 @@ export class ServerRequest implements Deno.RequestEvent {
    * Send a response to the request.
    *
    * @param {Response|Promise<Response>} response
-   * @returns {Promise<void>}
-   * @throws {Deno.errors.BadResource} when the response has already been sent.
+   * @return {Promise<void>}
+   *
+   * @throw {Deno.errors.BadResource} when the response has already been sent.
    */
   respondWith(response: Response | Promise<Response>): Promise<void> {
     if (this.#done) {
@@ -116,7 +117,9 @@ export class Server implements AsyncIterable<ServerRequest> {
    * Yields all HTTP requests on a single TCP connection.
    *
    * @param {Deno.HttpConn} httpConn The HTTP connection to yield requests from.
+   *
    * @yields {ServerRequest} HTTP request events
+   *
    * @private
    */
   private async *iterateHttpRequests(
@@ -159,7 +162,9 @@ export class Server implements AsyncIterable<ServerRequest> {
    * connection can be accepted.
    *
    * @param {MuxAsyncIterator<ServerRequest>} mux
+   *
    * @yields {ServerRequest}
+   *
    * @private
    */
   private async *acceptConnAndIterateHttpRequests(
@@ -207,6 +212,7 @@ export class Server implements AsyncIterable<ServerRequest> {
    * Adds the HTTP connection to the internal tracking list.
    *
    * @param {Deno.HttpConn} httpConn
+   *
    * @private
    */
   private trackConnection(httpConn: Deno.HttpConn): void {
@@ -231,7 +237,7 @@ export class Server implements AsyncIterable<ServerRequest> {
    * Implementation of Async Iterator to allow consumers to loop over
    * HTTP requests.
    *
-   * @returns {AsyncIterableIterator<ServerRequest>} The async iterator.
+   * @return {AsyncIterableIterator<ServerRequest>} The async iterator.
    */
   [Symbol.asyncIterator](): AsyncIterableIterator<ServerRequest> {
     const mux: MuxAsyncIterator<ServerRequest> = new MuxAsyncIterator();
@@ -245,8 +251,10 @@ export class Server implements AsyncIterable<ServerRequest> {
  * Creates an address object from a string.
  *
  * @param {string} address The address string to parse.
- * @returns {HTTPOptions} The parsed address object.
- * @throws {TypeError} when an invalid address string is provided.
+ * @return {HTTPOptions} The parsed address object.
+ *
+ * @throw {TypeError} when an invalid address string is provided.
+ *
  * @private
  */
 function parseAddressFromString(address: string): HTTPOptions {
@@ -280,7 +288,8 @@ function parseAddressFromString(address: string): HTTPOptions {
  * Determines if the provided options are for a TLS listener.
  *
  * @param {*} listenOptions The options to interrogate.
- * @returns {boolean} Whether the provided options are for a TLS listener.
+ * @return {boolean} Whether the provided options are for a TLS listener.
+ *
  * @private
  */
 function isListenTlsOptions(
@@ -294,9 +303,11 @@ function isListenTlsOptions(
  * Creates a new HTTP Server on the provided address.
  *
  * @param {null|number|string|HTTPOptions|HTTPSOptions} [address] The address for the server to listen on.
- * @returns {Server} A server instance listening on the provided address.
+ * @return {Server} A server instance listening on the provided address.
+ *
  * @example
  *
+ * ```ts
  * import { serve } from "https://deno.land/x/native_http/mod.ts";
  *
  * const server = serve(4505);
@@ -308,7 +319,7 @@ function isListenTlsOptions(
  *
  *   requestEvent.respondWith(new Response(body, { status: 200 }));
  * }
- *
+ * ```
  */
 export function serve(
   address?: null | number | string | HTTPOptions | HTTPSOptions,
@@ -340,6 +351,7 @@ export function serve(
  * @param {Function} handler A handler for incoming HTTP requests.
  * @example
  *
+ * ```ts
  * import { listenAndServe } from "https://deno.land/x/native_http/mod.ts";
  *
  * listenAndServe(4505, (requestEvent) => {
@@ -349,7 +361,7 @@ export function serve(
  *
  *   requestEvent.respondWith(new Response(body, { status: 200 }));
  * });
- *
+ * ```
  */
 export async function listenAndServe(
   address: undefined | null | number | string | HTTPOptions | HTTPSOptions,

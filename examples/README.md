@@ -13,7 +13,7 @@ deno run --allow-net --unstable ./examples/serve.ts
 Starts a server on port `4505` using the the `listenAndServe` method.
 
 ```console
-deno run --allow-net --unstable ./examples/closeServer.ts
+deno run --allow-net --unstable ./examples/listenAndServe.ts
 ```
 
 ## closeServer
