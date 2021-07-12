@@ -292,7 +292,7 @@ it("serve should return a new Server on the provided HTTP options object", () =>
 
       const server = serve(4505);
       const address = server.listener.addr as Deno.NetAddr;
-      const url = `http://${address.hostname}:${address.port}`;
+      const url = `http://localhost:${address.port}`;
 
       (async () => {
         for await (const requestEvent of server) {
