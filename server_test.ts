@@ -4,6 +4,7 @@ import {
 } from "https://deno.land/std@0.100.0/testing/asserts.ts";
 import { superdeno } from "https://deno.land/x/superdeno@4.3.0/mod.ts";
 import { serve, Server, ServerRequest } from "./server.ts";
+import { it } from "./_utils.ts";
 
 class MockRequestEvent implements Deno.RequestEvent {
   calls: Response[] = [];
@@ -92,7 +93,7 @@ const mockRequestEvent = new MockRequestEvent("http://0.0.0.0:4505");
 const mockResponse = new Response("test-response", { status: 200 });
 const mockConn = new MockConn();
 
-Deno.test("ServerRequest should expose the underlying Request through a getter", async () => {
+it("ServerRequest should expose the underlying Request through a getter", async () => {
   const request = new ServerRequest(mockRequestEvent);
 
   equal(request.request, mockRequestEvent.request);
@@ -101,7 +102,7 @@ Deno.test("ServerRequest should expose the underlying Request through a getter",
   await request.done;
 });
 
-Deno.test("ServerRequest should expose the underlying Request url through a getter", async () => {
+it("ServerRequest should expose the underlying Request url through a getter", async () => {
   const request = new ServerRequest(mockRequestEvent);
 
   equal(request.url, mockRequestEvent.request.url);
@@ -110,7 +111,7 @@ Deno.test("ServerRequest should expose the underlying Request url through a gett
   await request.done;
 });
 
-Deno.test("ServerRequest should expose the underlying Request method through a getter", async () => {
+it("ServerRequest should expose the underlying Request method through a getter", async () => {
   const request = new ServerRequest(mockRequestEvent);
 
   equal(request.method, mockRequestEvent.request.method);
@@ -119,7 +120,7 @@ Deno.test("ServerRequest should expose the underlying Request method through a g
   await request.done;
 });
 
-Deno.test("ServerRequest should expose the underlying Request headers through a getter", async () => {
+it("ServerRequest should expose the underlying Request headers through a getter", async () => {
   const request = new ServerRequest(mockRequestEvent);
 
   equal(request.headers, mockRequestEvent.request.headers);
@@ -128,7 +129,7 @@ Deno.test("ServerRequest should expose the underlying Request headers through a 
   await request.done;
 });
 
-Deno.test("ServerRequest should expose a done promise getter which resolves when the response has been sent", async () => {
+it("ServerRequest should expose a done promise getter which resolves when the response has been sent", async () => {
   const request = new ServerRequest(mockRequestEvent);
   let done = false;
   request.done.then(() => done = true);
@@ -139,7 +140,7 @@ Deno.test("ServerRequest should expose a done promise getter which resolves when
   equal(done, true);
 });
 
-Deno.test("ServerRequest should delegate the responding to the underlying requestEvent", async () => {
+it("ServerRequest should delegate the responding to the underlying requestEvent", async () => {
   const request = new ServerRequest(mockRequestEvent);
   await request.respondWith(mockResponse);
 
@@ -148,7 +149,7 @@ Deno.test("ServerRequest should delegate the responding to the underlying reques
   await request.done;
 });
 
-Deno.test("ServerRequest should throw a TypeError if the response has already been sent", async () => {
+it("ServerRequest should throw a TypeError if the response has already been sent", async () => {
   const request = new ServerRequest(mockRequestEvent);
   await request.respondWith(mockResponse);
 
@@ -163,14 +164,14 @@ Deno.test("ServerRequest should throw a TypeError if the response has already be
   await request.done;
 });
 
-Deno.test("Server should expose the underlying listener", () => {
+it("Server should expose the underlying listener", () => {
   const mockListener = new MockListener(mockConn);
   const server = new Server(mockListener);
 
   equal(server.listener, mockListener);
 });
 
-Deno.test("Server should close the underlying listener on close", () => {
+it("Server should close the underlying listener on close", () => {
   const mockListener = new MockListener(mockConn);
   const server = new Server(mockListener);
 
@@ -179,7 +180,7 @@ Deno.test("Server should close the underlying listener on close", () => {
   equal(mockListener.closed, true);
 });
 
-// Deno.test("serve should return a new Server on port 80 when no options are provided", () => {
+// it("serve should return a new Server on port 80 when no options are provided", () => {
 //   const expectedPort = 80;
 //   const server = serve();
 
@@ -192,7 +193,7 @@ Deno.test("Server should close the underlying listener on close", () => {
 //   server.close();
 // });
 
-// Deno.test("serve should return a new Server on port 80 when null is provided", () => {
+// it("serve should return a new Server on port 80 when null is provided", () => {
 //   const expectedPort = 80;
 //   const server = serve(null);
 
@@ -205,7 +206,7 @@ Deno.test("Server should close the underlying listener on close", () => {
 //   server.close();
 // });
 
-Deno.test("serve should return a new Server on the provided port", () => {
+it("serve should return a new Server on the provided port", () => {
   const expectedPort = 4505;
   const server = serve(expectedPort);
 
@@ -218,7 +219,7 @@ Deno.test("serve should return a new Server on the provided port", () => {
   server.close();
 });
 
-Deno.test("serve should return a new Server on the provided string port", () => {
+it("serve should return a new Server on the provided string port", () => {
   const expectedPort = 4505;
   const expectedHostname = "0.0.0.0";
 
@@ -234,7 +235,7 @@ Deno.test("serve should return a new Server on the provided string port", () => 
   server.close();
 });
 
-// Deno.test("serve should return a new Server on the provided string hostname", () => {
+// it("serve should return a new Server on the provided string hostname", () => {
 //   const expectedPort = 80;
 //   const expectedHostname = "0.0.0.0";
 
@@ -250,7 +251,7 @@ Deno.test("serve should return a new Server on the provided string port", () => 
 //   server.close();
 // });
 
-Deno.test("serve should return a new Server on the provided string hostname", () => {
+it("serve should return a new Server on the provided string hostname", () => {
   const expectedPort = 4505;
   const expectedHostname = "0.0.0.0";
 
@@ -266,7 +267,7 @@ Deno.test("serve should return a new Server on the provided string hostname", ()
   server.close();
 });
 
-Deno.test("serve should return a new Server on the provided HTTP options object", () => {
+it("serve should return a new Server on the provided HTTP options object", () => {
   const expectedPort = 4505;
   const expectedHostname = "0.0.0.0";
 
@@ -284,7 +285,9 @@ Deno.test("serve should return a new Server on the provided HTTP options object"
 
 ["get", "post", "put", "delete", "patch"].forEach(
   (method) => {
-    Deno.test(`serve should return a new Server capable of handling ${method} requests and gracefully closing afterwards`, async () => {
+    it(`serve should return a new Server capable of handling ${method} requests and gracefully closing afterwards`, (
+      done,
+    ) => {
       const expectedStatus = 418;
 
       const server = serve(4505);
@@ -305,11 +308,14 @@ Deno.test("serve should return a new Server on the provided HTTP options object"
       })();
 
       // deno-lint-ignore no-explicit-any
-      await (superdeno(url) as any)[method]("/")
+      (superdeno(url) as any)[method]("/")
         .expect(`${method.toUpperCase()}: ${url}/`)
-        .expect(expectedStatus);
+        .expect(expectedStatus)
+        .end((err: Error) => {
+          server.close();
 
-      server.close();
+          done(err);
+        });
     });
   },
 );
