@@ -4,12 +4,15 @@
 // allow you to connect.
 
 import { serve } from "../mod.ts";
+import { dirname, fromFileUrl, resolve } from "../test/deps.ts";
+
+const __dirname = dirname(fromFileUrl(import.meta.url));
 
 const tlsOptions = {
   hostname: "localhost",
   port: 4505,
-  certFile: new URL("../test/tls/localhost.crt", import.meta.url).pathname,
-  keyFile: new URL("../test/tls/localhost.key", import.meta.url).pathname,
+  certFile: resolve(__dirname, "../test/tls/localhost.crt"),
+  keyFile: resolve(__dirname, "../test/tls/localhost.key"),
   alpnProtocols: ["h2", "http/1.1"],
 };
 

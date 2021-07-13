@@ -2,13 +2,18 @@ import { serve, Server, ServerRequest } from "./server.ts";
 import {
   assert,
   assertThrowsAsync,
+  dirname,
   equal,
+  fromFileUrl,
   readAll,
+  resolve,
   superdeno,
   unreachable,
   writeAll,
 } from "./test/deps.ts";
 import { it } from "./test/utils.ts";
+
+const __dirname = dirname(fromFileUrl(import.meta.url));
 
 class MockRequestEvent implements Deno.RequestEvent {
   calls: Response[] = [];
@@ -332,8 +337,8 @@ it("serve should return a new Server on the provided HTTP options object", () =>
       const tlsOptions = {
         hostname: "localhost",
         port: 4505,
-        certFile: new URL("./test/tls/localhost.crt", import.meta.url).pathname,
-        keyFile: new URL("./test/tls/localhost.key", import.meta.url).pathname,
+        certFile: resolve(__dirname, "test/tls/localhost.crt"),
+        keyFile: resolve(__dirname, "test/tls/localhost.key"),
         alpnProtocols: ["h2", "http/1.1"],
       };
 
@@ -374,7 +379,7 @@ it("serve should return a new Server on the provided HTTP options object", () =>
         const conn = await Deno.connectTls({
           hostname: tlsOptions.hostname,
           port: tlsOptions.port,
-          certFile: new URL("./test/tls/RootCA.pem", import.meta.url).pathname,
+          certFile: resolve(__dirname, "test/tls/RootCA.pem"),
         });
 
         await writeAll(
