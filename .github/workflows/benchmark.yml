@@ -1,0 +1,32 @@
+name: Run benchmark
+
+on:
+  pull_request:
+
+jobs:
+  benchmark:
+    runs-on: macos-latest
+    steps:
+      - run: HOMEBREW_NO_AUTO_UPDATE=1 brew install wrk
+      - uses: actions/checkout@v2
+      - uses: denolib/setup-deno@v2
+        with:
+          deno-version: 1.11.5
+      - run: |
+          mkdir -p artifacts          
+          cat > artifacts/message.md <<EOF
+          # Benchmark results
+
+          <details>
+          <summary>PR to merge $GITHUB_HEAD_REF $GITHUB_SHA -> $GITHUB_BASE_REF</summary>
+
+          \`\`\`console
+          $(make benchmark)
+          \`\`\`
+
+          </details>
+          EOF
+      - uses: actions/upload-artifact@v1
+        with:
+          name: pr_message
+          path: artifacts
