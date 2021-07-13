@@ -21,7 +21,7 @@ jobs:
           <summary>PR to merge $GITHUB_HEAD_REF $GITHUB_SHA -> $GITHUB_BASE_REF</summary>
 
           \`\`\`console
-$(make benchmark)
+          $(make benchmark)
           \`\`\`
 
           </details>
