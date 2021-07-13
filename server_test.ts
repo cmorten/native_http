@@ -1,10 +1,14 @@
-import {
-  equal,
-  unreachable,
-} from "https://deno.land/std@0.100.0/testing/asserts.ts";
-import { superdeno } from "https://deno.land/x/superdeno@4.3.0/mod.ts";
 import { serve, Server, ServerRequest } from "./server.ts";
-import { it } from "./_utils.ts";
+import {
+  assert,
+  assertThrowsAsync,
+  equal,
+  readAll,
+  superdeno,
+  unreachable,
+  writeAll,
+} from "./test/deps.ts";
+import { it } from "./test/utils.ts";
 
 class MockRequestEvent implements Deno.RequestEvent {
   calls: Response[] = [];
@@ -285,7 +289,7 @@ it("serve should return a new Server on the provided HTTP options object", () =>
 
 ["get", "post", "put", "delete", "patch"].forEach(
   (method) => {
-    it(`serve should return a new Server capable of handling ${method} requests and gracefully closing afterwards`, (
+    it(`serve should return a new HTTP Server capable of handling ${method} requests and gracefully closing afterwards`, (
       done,
     ) => {
       const expectedStatus = 418;
@@ -316,6 +320,87 @@ it("serve should return a new Server on the provided HTTP options object", () =>
 
           done(err);
         });
+    });
+  },
+);
+
+["get", "post", "put", "delete", "patch"].forEach(
+  (method) => {
+    it(`serve should return a new HTTPS Server capable of handling ${method} requests and gracefully closing afterwards`, async () => {
+      const expectedStatus = 418;
+
+      const tlsOptions = {
+        hostname: "localhost",
+        port: 4505,
+        certFile: new URL("./test/tls/localhost.crt", import.meta.url).pathname,
+        keyFile: new URL("./test/tls/localhost.key", import.meta.url).pathname,
+        alpnProtocols: ["h2", "http/1.1"],
+      };
+
+      const server = serve(tlsOptions);
+
+      (async () => {
+        for await (const requestEvent of server) {
+          const response = new Response(
+            `${requestEvent.method}: Hello Deno on HTTPS!`,
+            {
+              status: expectedStatus,
+            },
+          );
+
+          await requestEvent.respondWith(response);
+        }
+      })();
+
+      try {
+        // Invalid certificate, connection should throw on first read or write
+        // but should not crash the server.
+        const badConn = await Deno.connectTls({
+          hostname: tlsOptions.hostname,
+          port: tlsOptions.port,
+          // missing certFile
+        });
+
+        await assertThrowsAsync(
+          () => badConn.read(new Uint8Array(1)),
+          Deno.errors.InvalidData,
+          "invalid certificate: UnknownIssuer",
+          "Read with missing certFile didn't throw an InvalidData error when it should have.",
+        );
+
+        badConn.close();
+
+        // Valid request after invalid
+        const conn = await Deno.connectTls({
+          hostname: tlsOptions.hostname,
+          port: tlsOptions.port,
+          certFile: new URL("./test/tls/RootCA.pem", import.meta.url).pathname,
+        });
+
+        await writeAll(
+          conn,
+          new TextEncoder().encode(
+            `${method.toUpperCase()} / HTTP/1.0\r\n\r\n`,
+          ),
+        );
+
+        const response = new TextDecoder().decode(await readAll(conn));
+
+        conn.close();
+
+        assert(
+          response.includes("HTTP/1.0 418 I'm a teapot"),
+          "Status code not correct",
+        );
+        assert(
+          response.includes(
+            `${method.toUpperCase()}: Hello Deno on HTTPS!`,
+          ),
+          "Response body not correct",
+        );
+      } finally {
+        server.close();
+      }
     });
   },
 );

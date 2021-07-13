@@ -1,4 +1,4 @@
-import { MuxAsyncIterator } from "https://deno.land/std@0.100.0/async/mod.ts";
+import { MuxAsyncIterator } from "./deps.ts";
 import { HttpConn, RequestEvent } from "./deno_types.ts";
 
 export type HTTPOptions = Omit<Deno.ListenOptions, "transport">;
@@ -133,10 +133,18 @@ export class Server implements AsyncIterable<ServerRequest> {
     httpConn: HttpConn,
   ): AsyncIterableIterator<ServerRequest> {
     while (!this.#closing) {
-      // Yield the new HTTP request on the connection.
-      const requestEvent = await httpConn.nextRequest();
+      let requestEvent!: RequestEvent | null;
+
+      try {
+        // Yield the new HTTP request on the connection.
+        requestEvent = await httpConn.nextRequest();
+      } catch (_) {
+        // Connection has been closed.
+        break;
+      }
 
       if (requestEvent === null) {
+        // Connection has been closed.
         break;
       }
 
