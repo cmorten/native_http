@@ -10,4 +10,6 @@ export {
   fromFileUrl,
   resolve,
 } from "https://deno.land/std@0.101.0/path/mod.ts";
+export { deferred } from "https://deno.land/std@0.101.0/async/mod.ts";
+export type { Deferred } from "https://deno.land/std@0.101.0/async/mod.ts";
 export { superdeno } from "https://deno.land/x/superdeno@4.3.0/mod.ts";
