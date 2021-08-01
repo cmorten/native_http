@@ -154,9 +154,14 @@ export class Server implements AsyncIterable<ServerRequest> {
       // Consumer can handle the request event.
       yield serverRequest;
 
-      // Wait for the request to be processed before we accept a new request on
-      // this connection.
-      await serverRequest.done;
+      try {
+        // Wait for the request to be processed before we accept a new request on
+        // this connection.
+        await serverRequest.done;
+      } catch {
+        // Connection has been closed.
+        break;
+      }
     }
 
     this.untrackConnection(httpConn);

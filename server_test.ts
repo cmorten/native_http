@@ -2,6 +2,7 @@ import { serve, Server, ServerRequest } from "./server.ts";
 import {
   assert,
   assertThrowsAsync,
+  deferred,
   dirname,
   equal,
   fromFileUrl,
@@ -409,3 +410,48 @@ it("serve should return a new Server on the provided HTTP options object", () =>
     });
   },
 );
+
+// Reference  https://github.com/cmorten/native_http/issues/4
+it("should not throw uncaught promise when connection is closed", async () => {
+  const delay = (ms: number) =>
+    new Promise((resolve) => setTimeout(resolve, ms));
+
+  const address = {
+    hostname: "localhost",
+    port: 4505,
+    alpnProtocols: ["h2", "http/1.1"],
+  };
+
+  const server = serve(address);
+
+  const errors: Error[] = [];
+  const onRequest = deferred();
+  const postRespondWith = deferred();
+
+  (async () => {
+    for await (const requestEvent of server) {
+      const response = new Response("Hi");
+      onRequest.resolve();
+      await delay(500);
+      await requestEvent.respondWith(response).catch((e) => errors.push(e));
+      postRespondWith.resolve();
+    }
+  })();
+
+  const conn = await Deno.connect(address);
+
+  await writeAll(
+    conn,
+    new TextEncoder().encode(
+      `GET / HTTP/1.0\r\n\r\n`,
+    ),
+  );
+
+  await onRequest;
+  conn.close();
+
+  await postRespondWith;
+  server.close();
+
+  assert(errors.length === 1);
+});
