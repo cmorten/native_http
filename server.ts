@@ -91,7 +91,7 @@ export class ServerRequest implements RequestEvent {
 
 export class Server implements AsyncIterable<ServerRequest> {
   #closing = false;
-  #httpConnections: HttpConn[] = [];
+  #httpConnections: Set<HttpConn> = new Set();
 
   /**
    * Creates a new Server instance.
@@ -117,7 +117,7 @@ export class Server implements AsyncIterable<ServerRequest> {
       }
     }
 
-    this.#httpConnections = [];
+    this.#httpConnections.clear();
   }
 
   /**
@@ -231,7 +231,7 @@ export class Server implements AsyncIterable<ServerRequest> {
    * @private
    */
   private trackConnection(httpConn: HttpConn): void {
-    this.#httpConnections.push(httpConn);
+    this.#httpConnections.add(httpConn);
   }
 
   /**
@@ -241,11 +241,7 @@ export class Server implements AsyncIterable<ServerRequest> {
    * @private
    */
   private untrackConnection(httpConn: HttpConn): void {
-    const index = this.#httpConnections.indexOf(httpConn);
-
-    if (index !== -1) {
-      this.#httpConnections.splice(index, 1);
-    }
+    this.#httpConnections.delete(httpConn);
   }
 
   /**
