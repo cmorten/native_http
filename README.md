@@ -8,7 +8,7 @@
 <img src="https://img.shields.io/github/forks/cmorten/native_http" alt="native_http forks" />
 <img src="https://img.shields.io/github/license/cmorten/native_http" alt="native_http license" />
 <a href="https://github.com/cmorten/native_http/graphs/commit-activity"><img src="https://img.shields.io/badge/Maintained%3F-yes-green.svg" alt="native_http is maintained" /></a>
-<a href="https://github.com/denoland/deno/blob/main/Releases.md"><img src="https://img.shields.io/badge/deno-^1.12.0-brightgreen?logo=deno" alt="Minimum supported Deno version" /></a>
+<a href="https://github.com/denoland/deno/blob/main/Releases.md"><img src="https://img.shields.io/badge/deno-^1.13.0-brightgreen?logo=deno" alt="Minimum supported Deno version" /></a>
 
 `native_http` is a module to provide native Deno HTTP client and server
 implementations equivalent to those currently provided by the Deno
@@ -33,7 +33,7 @@ Please refer to the
 
 ## Examples
 
-Please refer to the [examples documentation](./examples).
+Please refer to the [examples documentation](./examples/README.md).
 
 ## Contributing
 

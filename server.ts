@@ -1,19 +1,18 @@
 import { MuxAsyncIterator } from "./deps.ts";
-import { HttpConn, RequestEvent } from "./deno_types.ts";
 
 export type HTTPOptions = Omit<Deno.ListenOptions, "transport">;
 export type HTTPSOptions = Omit<Deno.ListenTlsOptions, "transport">;
 
 const ERROR_INVALID_ADDRESS = "Invalid address";
 const ERROR_ALREADY_RESPONDED = "Response already sent";
-const ERROR_NEED_UNSTABLE_FLAG = "`--unstable` flag is required";
+const ERROR_MIN_DENO_VERSION_REQUIRED = "Minimum Deno version ^1.3.0 required";
 
-const serveHttp: (conn: Deno.Conn) => HttpConn = "serveHttp" in Deno
+const serveHttp: (conn: Deno.Conn) => Deno.HttpConn = "serveHttp" in Deno
   ? // deno-lint-ignore no-explicit-any
     (Deno as any).serveHttp.bind(Deno)
   : undefined;
 
-export class ServerRequest implements RequestEvent {
+export class ServerRequest implements Deno.RequestEvent {
   #request: Request;
   #resolver!: (value: Response | Promise<Response>) => void;
   #responsePromise: Promise<void>;
@@ -22,9 +21,9 @@ export class ServerRequest implements RequestEvent {
   /**
    * Constructs a new ServerRequest instance.
    *
-   * @param {RequestEvent} requestEvent
+   * @param {Deno.RequestEvent} requestEvent
    */
-  constructor(requestEvent: RequestEvent) {
+  constructor(requestEvent: Deno.RequestEvent) {
     this.#request = requestEvent.request;
 
     const wrappedResponse = new Promise<Response>((resolve) => {
@@ -91,7 +90,7 @@ export class ServerRequest implements RequestEvent {
 
 export class Server implements AsyncIterable<ServerRequest> {
   #closing = false;
-  #httpConnections: Set<HttpConn> = new Set();
+  #httpConnections: Set<Deno.HttpConn> = new Set();
 
   /**
    * Creates a new Server instance.
@@ -130,10 +129,10 @@ export class Server implements AsyncIterable<ServerRequest> {
    * @private
    */
   private async *iterateHttpRequests(
-    httpConn: HttpConn,
+    httpConn: Deno.HttpConn,
   ): AsyncIterableIterator<ServerRequest> {
     while (!this.#closing) {
-      let requestEvent!: RequestEvent | null;
+      let requestEvent!: Deno.RequestEvent | null;
 
       try {
         // Yield the new HTTP request on the connection.
@@ -235,7 +234,7 @@ export class Server implements AsyncIterable<ServerRequest> {
    *
    * @private
    */
-  private trackConnection(httpConn: HttpConn): void {
+  private trackConnection(httpConn: Deno.HttpConn): void {
     this.#httpConnections.add(httpConn);
   }
 
@@ -245,7 +244,7 @@ export class Server implements AsyncIterable<ServerRequest> {
    * @param {HttpConn} httpConn
    * @private
    */
-  private untrackConnection(httpConn: HttpConn): void {
+  private untrackConnection(httpConn: Deno.HttpConn): void {
     this.#httpConnections.delete(httpConn);
   }
 
@@ -343,7 +342,7 @@ export function serve(
   address?: null | number | string | HTTPOptions | HTTPSOptions,
 ): Server {
   if (!serveHttp) {
-    throw new Error(ERROR_NEED_UNSTABLE_FLAG);
+    throw new Error(ERROR_MIN_DENO_VERSION_REQUIRED);
   }
 
   let listenOptions;
